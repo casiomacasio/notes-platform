@@ -9,6 +9,7 @@ import (
     "github.com/casiomacasio/notes-platform/services/user/internal/repository"
     "github.com/casiomacasio/notes-platform/services/user/server"
     "github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
     "github.com/spf13/viper"
     "os"
@@ -21,9 +22,9 @@ func main() {
 
     if err := godotenv.Load(); err != nil {
 		logrus.Fatalf("error loading .env file: %s", err.Error())
-    }
-
-    db, err := repository.NewPostgresDB(repository.Config{
+    } 
+   
+    db, err := repository.NewPostgresDB(repository.Config{ 
         Host:     viper.GetString("postgres.db.host"),
         Port:     viper.GetString("postgres.db.port"),
         Username: viper.GetString("postgres.db.username"),
@@ -34,12 +35,12 @@ func main() {
     if err != nil {
         logrus.Fatalf("failed to connect to db: %s", err.Error())
     }
-    authRepos := repository.NewRepository(db)
-    authService := service.NewService(authRepos)
-    authHandler := handler.NewHandler(authService)
+    userRepos := repository.NewRepository(db)
+    userService := service.NewService(userRepos)
+    userHandler := handler.NewHandler(userService)
 	srv := new(server.Server)
 	go func () {
-		if err := srv.Run(viper.GetString("port"), authHandler.InitRoutes()); err != nil {
+		if err := srv.Run(viper.GetString("port"), userHandler.InitRoutes()); err != nil {
 			logrus.Fatalf("error occurred while running http server: %v", err.Error())
 		}
 	}()

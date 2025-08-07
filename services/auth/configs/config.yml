@@ -4,5 +4,5 @@ postgres:
     host: "auth_db"
     port: "5432"
     username: "postgres"
-    dbname: "auth_db"
-    sslmode: "disable"
+    dbname: "auth_db" 
+    sslmode: "disable" 

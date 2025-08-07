@@ -4,11 +4,12 @@ import (
 	"context"
 	"os/signal"
 	"syscall"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/handler"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/service"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/repository"
-    "github.com/casiomacasio/notes-platform/services/auth/server"
+    "github.com/casiomacasio/notes-platform/services/note/internal/handler"
+    "github.com/casiomacasio/notes-platform/services/note/internal/service"
+    "github.com/casiomacasio/notes-platform/services/note/internal/repository"
+    "github.com/casiomacasio/notes-platform/services/note/server"
     "github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
     "github.com/spf13/viper"
     "os"
@@ -21,9 +22,9 @@ func main() {
 
     if err := godotenv.Load(); err != nil {
 		logrus.Fatalf("error loading .env file: %s", err.Error())
-    }
-  
-    db, err := repository.NewPostgresDB(repository.Config{
+    } 
+   
+    db, err := repository.NewPostgresDB(repository.Config{ 
         Host:     viper.GetString("postgres.db.host"),
         Port:     viper.GetString("postgres.db.port"),
         Username: viper.GetString("postgres.db.username"),
@@ -34,22 +35,22 @@ func main() {
     if err != nil {
         logrus.Fatalf("failed to connect to db: %s", err.Error())
     }
-    authRepos := repository.NewRepository(db)
-    authService := service.NewService(authRepos)
-    authHandler := handler.NewHandler(authService)
+    userRepos := repository.NewRepository(db)
+    userService := service.NewService(userRepos)
+    userHandler := handler.NewHandler(userService)
 	srv := new(server.Server)
 	go func () {
-		if err := srv.Run(viper.GetString("port"), authHandler.InitRoutes()); err != nil {
+		if err := srv.Run(viper.GetString("port"), userHandler.InitRoutes()); err != nil {
 			logrus.Fatalf("error occurred while running http server: %v", err.Error())
 		}
 	}()
-	logrus.Print("Auth Microservice Started")
+	logrus.Print("Note Microservice Started")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<- quit
 
-	logrus.Print("Auth Microservice Shutting Down")
+	logrus.Print("Note Microservice Shutting Down")
 
 	if err := srv.Shutdown(context.Background()); err != nil {
 		logrus.Errorf("Error occured when shutting down the server %s", err.Error())

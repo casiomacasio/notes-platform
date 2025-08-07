@@ -1,30 +1,27 @@
 package service
 
 import (
-	"context"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/model"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/repository"
-	"github.com/google/uuid"
+	"github.com/casiomacasio/notes-platform/services/user/internal/repository"
+	"github.com/casiomacasio/notes-platform/services/user/internal/model"
 )
 
-var ctx = context.Background()
+type User interface {
+	GetUser(userId int) (model.User, error)
+	UpdateUser(userId int, input model.UpdateUserInput) error
+}
 
 type Authorization interface {
-	CreateUser(user model.CreateUserRequest) (int, error)
-	GetUserByRefreshTokenAndRefreshTokenId(refresh_token string, refreshTokenUUID uuid.UUID) (int, error)
-	ParseToken(token string) (int, error)
-	GetUser(email, password string) (model.User, error)
-	GenerateToken(userId int) (string, error)
-	GenerateRefreshToken(userId int) (string, string, error)
-	RevokeRefreshToken(uuid.UUID) error
+	ParseToken(accessToken string) (int, error)
 }
 
 type Service struct {
+	User
 	Authorization
 }
 
 func NewService(repos *repository.Repository) *Service {
 	return &Service{
-		Authorization: NewAuthService(repos.Authorization),
+		User: NewUserService(repos.User),
+		Authorization: NewAuthService(),
 	}
 }

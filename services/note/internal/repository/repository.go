@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/casiomacasio/notes-platform/services/user/internal/model"
+	"github.com/casiomacasio/notes-platform/services/note/internal/model"
 	"github.com/jmoiron/sqlx"
 )
 

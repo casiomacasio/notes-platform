@@ -49,16 +49,24 @@ services:
       - "5433:5432"
 
   note_db:
-    image: postgres:15
+    image: postgres:latest
     restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_DB=note_db
     volumes:
       - note_db_data:/var/lib/postgresql/data
     ports:
       - "5434:5432"
 
   user_db:
-    image: postgres:15
+    image: postgres:latest
     restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_DB=user_db
     volumes:
       - user_db_data:/var/lib/postgresql/data
     ports:
@@ -73,3 +81,4 @@ services:
 volumes:
   auth_db_data:
   note_db_data:
+  user_db_data:
