@@ -4,11 +4,13 @@ import (
 	"context"
 	"os/signal"
 	"syscall"
+    "github.com/casiomacasio/notes-platform/services/note/internal/events"
     "github.com/casiomacasio/notes-platform/services/note/internal/handler"
     "github.com/casiomacasio/notes-platform/services/note/internal/service"
     "github.com/casiomacasio/notes-platform/services/note/internal/repository"
     "github.com/casiomacasio/notes-platform/services/note/server"
     "github.com/joho/godotenv"
+    "github.com/streadway/amqp"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
     "github.com/spf13/viper"
@@ -35,9 +37,19 @@ func main() {
     if err != nil {
         logrus.Fatalf("failed to connect to db: %s", err.Error())
     }
+    conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
+    if err != nil {
+        logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
+    }
+    defer conn.Close()
+
+    eventBus, err := events.NewRabbitMQBus(conn)
+    if err != nil {
+        logrus.Fatalf("failed to init event bus: %s", err)
+    }
     userRepos := repository.NewRepository(db)
     userService := service.NewService(userRepos)
-    userHandler := handler.NewHandler(userService)
+    userHandler := handler.NewHandler(userService, eventBus)
 	srv := new(server.Server)
 	go func () {
 		if err := srv.Run(viper.GetString("port"), userHandler.InitRoutes()); err != nil {

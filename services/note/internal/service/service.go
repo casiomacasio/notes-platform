@@ -6,10 +6,10 @@ import (
 )
 
 type Note interface {
-	CreateNote(userId int, input model.NoteInput) (int, error)
+	CreateNote(userId int, input model.CreateNoteInput) (int, error)
 	GetNoteByID(userId, noteId int) (model.Note, error)
 	GetAllNotes(userId int) ([]model.Note, error)
-	UpdateNote(userId, noteId int, input model.NoteInput) error
+	UpdateNote(userId, noteId int, input model.UpdateNoteInput) error
 	DeleteNote(userId, noteId int) error
 }
 

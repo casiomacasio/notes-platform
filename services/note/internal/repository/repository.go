@@ -6,20 +6,23 @@ import (
 )
 
 const (
-	usersTable      = "users"
+	notesTable = "notes"
 )
 
-type User interface{
-	GetUser(userId int) (model.User, error)
-	UpdateUser(useId int, input model.UpdateUserInput) error
+type Note interface {
+	CreateNote(userId int, input model.CreateNoteInput) (int, error)
+	GetNoteByID(userId, noteId int) (model.Note, error)
+	GetAllNotes(userId int) ([]model.Note, error)
+	UpdateNote(userId, noteId int, input model.UpdateNoteInput) error
+	DeleteNote(userId, noteId int) error
 }
 
 type Repository struct {
-	User
+	Note
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
-		User: NewUserPostgres(db),
+		Note: NewNotePostgres(db),
 	}
 }

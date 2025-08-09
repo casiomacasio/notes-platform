@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
-
+	"github.com/casiomacasio/notes-platform/services/note/internal/events"
 	"github.com/casiomacasio/notes-platform/services/note/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -12,7 +12,22 @@ type getNoteByIdResponse struct {
 	Data model.Note `json:"data"`
 }
 
-func (h Handler) createNote(c *gin.Context) {
+func (h *Handler) CreateNotification(c *gin.Context) {
+    var input model.NotificationInput
+    if err := c.BindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    h.eventBus.Publish("notifications", events.Event{
+        Type: input.Type,
+        Data: input.Data,
+    })
+
+    c.JSON(http.StatusOK, gin.H{"status": "notification published"})
+}
+
+func (h *Handler) createNote(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -35,7 +50,7 @@ func (h Handler) createNote(c *gin.Context) {
 	})
 }
 
-func (h Handler) getAllNotes(c *gin.Context) {
+func (h *Handler) getAllNotes(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -52,7 +67,7 @@ func (h Handler) getAllNotes(c *gin.Context) {
 	})
 }
 
-func (h Handler) getNoteByID(c *gin.Context) {
+func (h *Handler) getNoteByID(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -73,7 +88,7 @@ func (h Handler) getNoteByID(c *gin.Context) {
 	c.JSON(http.StatusOK, getNoteByIdResponse{Data: note})
 }
 
-func (h Handler) updateNote(c *gin.Context) {
+func (h *Handler) updateNote(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -102,7 +117,7 @@ func (h Handler) updateNote(c *gin.Context) {
 	})
 }
 
-func (h Handler) deleteNote(c *gin.Context) {
+func (h *Handler) deleteNote(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return

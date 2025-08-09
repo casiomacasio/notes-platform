@@ -12,7 +12,7 @@ type getUserByIdResponses struct {
 	Data model.User `json:"data"`
 }
 
-func (h Handler) getMe(c *gin.Context) {
+func (h *Handler) getMe(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -25,7 +25,7 @@ func (h Handler) getMe(c *gin.Context) {
 	c.JSON(http.StatusOK, getUserByIdResponses{Data: user})
 }
 
-func (h Handler) getByID(c *gin.Context) {
+func (h *Handler) getByID(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return
@@ -38,7 +38,7 @@ func (h Handler) getByID(c *gin.Context) {
 	c.JSON(http.StatusOK, getUserByIdResponses{Data: user})
 }
 
-func (h Handler) updateMe(c *gin.Context) {
+func (h *Handler) updateMe(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return

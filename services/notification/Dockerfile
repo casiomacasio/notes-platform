@@ -8,6 +8,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o auth ./cmd/main.go
+RUN go build -o notification ./cmd/main.go
 
-CMD ["./auth"]
+CMD ["./notification"]

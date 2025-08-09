@@ -13,7 +13,7 @@ var (
 	ErrTokenExpired  = errors.New("token expired")
 )
 
-func (h Handler) userIdentity(c *gin.Context) {
+func (h *Handler) userIdentity(c *gin.Context) {
 	token, err := c.Cookie("access_token")
 	if err != nil {
 		newErrorResponse(c, http.StatusUnauthorized, "missing access token cookie")
