@@ -1,16 +1,19 @@
 package main
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
+	"context"
+	"github.com/casiomacasio/notes-platform/services/notification/internal/events"
+	"github.com/casiomacasio/notes-platform/services/notification/internal/handler"
+	"github.com/casiomacasio/notes-platform/services/notification/internal/repository"
+	"github.com/casiomacasio/notes-platform/services/notification/internal/service"
+	"github.com/casiomacasio/notes-platform/services/notification/server"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-
-	"github.com/casiomacasio/notes-platform/services/notification/internal/handler"
-	"github.com/casiomacasio/notes-platform/services/notification/internal/server"
+	"github.com/streadway/amqp"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -22,30 +25,47 @@ func main() {
 		logrus.Fatalf("error loading .env file: %s", err.Error())
 	}
 
-	s, err := server.NewRabbitMQConsumer(
-		viper.GetString("rabbitmq.url"),
-		viper.GetString("rabbitmq.queue"),
-	)
+	conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
 	if err != nil {
-		logrus.Fatalf("could not start consumer: %v", err)
+		logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}
+	defer conn.Close()
 
+	eventBus, err := events.NewRabbitMQBus(conn)
+	if err != nil {
+		logrus.Fatalf("failed to init event bus: %s", err)
+	}
+	if err := eventBus.Consume("notifications", handler.HandleNotificationEvent); err != nil {
+		logrus.Fatalf("Failed to subscribe to notifications: %s", err)
+	}
+	mongoClient, mongoDB := repository.ConnectMongo()
+	notificationRepos := repository.NewRepository(mongoDB)
+	notiticationService := service.NewService(notificationRepos)
+	authHandler := handler.NewHandler(notiticationService, eventBus)
+	srv := new(server.Server)
 	go func() {
-		s.Listen(func(event, payload string) {
-			consumer.HandleMessage(event, payload)
-		})
+		if err := srv.Run(viper.GetString("port"), authHandler.InitRoutes()); err != nil {
+			logrus.Fatalf("error occurred while running http server: %v", err.Error())
+		}
 	}()
-
-	logrus.Println("Notification Microservice Started")
+	logrus.Print("Notification Microservice Started")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
-	logrus.Println("Notification Microservice Shutting Down")
+	logrus.Print("Notification Microservice Shutting Down")
 
-	if err := s.Shutdown(); err != nil {
-		logrus.Errorf("error while shutting down: %v", err)
+	if err := srv.Shutdown(context.Background()); err != nil {
+		logrus.Errorf("Error occurred when shutting down the server: %s", err.Error())
+	}
+
+	if err := mongoClient.Disconnect(context.Background()); err != nil {
+		logrus.Errorf("Error occurred when disconnecting from MongoDB: %s", err.Error())
+	}
+
+	if err := conn.Close(); err != nil {
+		logrus.Errorf("Error occurred when closing RabbitMQ connection: %s", err.Error())
 	}
 }
 

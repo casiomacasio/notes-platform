@@ -1,0 +1,5 @@
+rabbitmq:
+  url: "amqp://guest:guest@rabbitmq_host:5672/"
+mongodb:
+  url: mongodb://localhost:27017
+  dbname: mydb

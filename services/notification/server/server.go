@@ -2,21 +2,25 @@ package server
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
+	"net/http"
+	"time"
 )
 
-type Server struct{}
-
-func NewServer() *Server {
-	return &Server{}
+type Server struct {
+	httpServer *http.Server
 }
 
-func (s *Server) Start(ctx context.Context, startFunc func(ctx context.Context) error) error {
-	logrus.Info("Notification Server is starting...")
-	return startFunc(ctx)
+func (s *Server) Run(port string, handler http.Handler) error {
+	s.httpServer = &http.Server{
+		Addr:           ":" + port,
+		Handler:        handler,
+		MaxHeaderBytes: 1 << 20,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+	}
+	return s.httpServer.ListenAndServe()
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	logrus.Info("Notification Server is shutting down...")
-	return nil
+	return s.httpServer.Shutdown(ctx)
 }
