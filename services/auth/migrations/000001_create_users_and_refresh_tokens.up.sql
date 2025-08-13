@@ -13,4 +13,4 @@ CREATE TABLE refresh_tokens (
     issued_at TIMESTAMP NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN DEFAULT FALSE
-);
+); 

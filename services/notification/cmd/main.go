@@ -35,13 +35,17 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("failed to init event bus: %s", err)
 	}
-	if err := eventBus.Consume("notifications", handler.HandleNotificationEvent); err != nil {
-		logrus.Fatalf("Failed to subscribe to notifications: %s", err)
-	}
 	mongoClient, mongoDB := repository.ConnectMongo()
 	notificationRepos := repository.NewRepository(mongoDB)
 	notiticationService := service.NewService(notificationRepos)
-	authHandler := handler.NewHandler(notiticationService, eventBus)
+	authHandler := handler.NewHandler(notiticationService)
+	go func() {
+		if err := eventBus.Consume("notifications", func(msg amqp.Delivery) {
+			service.ProcessOrderMessage(msg.Body)
+		}); err != nil {
+			logrus.Fatalf("failed to consume messages: %s", err)
+		}
+	}()
 	srv := new(server.Server)
 	go func() {
 		if err := srv.Run(viper.GetString("port"), authHandler.InitRoutes()); err != nil {

@@ -1,19 +1,20 @@
 package repository
 
 import (
-// "github.com/casiomacasio/notes-platform/services/notification/internal/model"
-// "github.com/jmoiron/sqlx"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Notification interface {
+	SaveNotification(data interface{}) error
+	GetNotificationsByUserId(userID string) ([]interface{}, error)
 }
 
 type Repository struct {
 	Notification
 }
 
-// func NewRepository(db *sqlx.DB) *Repository {
-// 	return &Repository{
-// 		Notification: NewNotePostgres(db),
-// 	}
-// }
+func NewRepository(db *mongo.Database) *Repository {
+	return &Repository{
+		Notification: NewNotificationMongo(db),
+	}
+}

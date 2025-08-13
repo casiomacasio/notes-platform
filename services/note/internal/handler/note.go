@@ -12,21 +12,6 @@ type getNoteByIdResponse struct {
 	Data model.Note `json:"data"`
 }
 
-func (h *Handler) CreateNotification(c *gin.Context) {
-    var input model.NotificationInput
-    if err := c.BindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-
-    h.eventBus.Publish("notifications", events.Event{
-        Type: input.Type,
-        Data: input.Data,
-    })
-
-    c.JSON(http.StatusOK, gin.H{"status": "notification published"})
-}
-
 func (h *Handler) createNote(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
@@ -45,6 +30,13 @@ func (h *Handler) createNote(c *gin.Context) {
 		return
 	}
 
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "note_created",
+		Data: map[string]interface{}{
+			"id":    noteId,
+			"title": input.Title,
+		},
+    })
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"id": noteId,
 	})
@@ -112,6 +104,14 @@ func (h *Handler) updateNote(c *gin.Context) {
 		return
 	}
 
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "note_updated",
+		Data: map[string]interface{}{
+			"id":    noteId,
+			"title": input.Title,
+		},
+    })
+
 	c.JSON(http.StatusOK, map[string]string{
 		"status": "updated",
 	})
@@ -134,6 +134,13 @@ func (h *Handler) deleteNote(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "note_deleted",
+		Data: map[string]interface{}{
+			"id":    noteId,
+		},
+    })
 
 	c.JSON(http.StatusOK, map[string]string{
 		"status": "deleted",

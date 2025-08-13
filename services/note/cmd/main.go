@@ -2,57 +2,57 @@ package main
 
 import (
 	"context"
-	"os/signal"
-	"syscall"
-    "github.com/casiomacasio/notes-platform/services/note/internal/events"
-    "github.com/casiomacasio/notes-platform/services/note/internal/handler"
-    "github.com/casiomacasio/notes-platform/services/note/internal/service"
-    "github.com/casiomacasio/notes-platform/services/note/internal/repository"
-    "github.com/casiomacasio/notes-platform/services/note/server"
-    "github.com/joho/godotenv"
-    "github.com/streadway/amqp"
+	"github.com/casiomacasio/notes-platform/services/note/internal/events"
+	"github.com/casiomacasio/notes-platform/services/note/internal/handler"
+	"github.com/casiomacasio/notes-platform/services/note/internal/repository"
+	"github.com/casiomacasio/notes-platform/services/note/internal/service"
+	"github.com/casiomacasio/notes-platform/services/note/server"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-    "github.com/spf13/viper"
-    "os"
+	"github.com/spf13/viper"
+	"github.com/streadway/amqp"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
-    if err := initConfig(); err != nil {
-        logrus.Fatalf("failed to read config: %s", err.Error())
-    }
+	if err := initConfig(); err != nil {
+		logrus.Fatalf("failed to read config: %s", err.Error())
+	}
 
-    if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(); err != nil {
 		logrus.Fatalf("error loading .env file: %s", err.Error())
-    } 
-   
-    db, err := repository.NewPostgresDB(repository.Config{ 
-        Host:     viper.GetString("postgres.db.host"),
-        Port:     viper.GetString("postgres.db.port"),
-        Username: viper.GetString("postgres.db.username"),
-		Password: os.Getenv("DB_PASSWORD"),
-        DBName:   viper.GetString("postgres.db.dbname"),
-        SSLMode:  viper.GetString("postgres.db.sslmode"),
-    })
-    if err != nil {
-        logrus.Fatalf("failed to connect to db: %s", err.Error())
-    }
-    conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
-    if err != nil {
-        logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
-    }
-    defer conn.Close()
+	}
 
-    eventBus, err := events.NewRabbitMQBus(conn)
-    if err != nil {
-        logrus.Fatalf("failed to init event bus: %s", err)
-    }
-    userRepos := repository.NewRepository(db)
-    userService := service.NewService(userRepos)
-    userHandler := handler.NewHandler(userService, eventBus)
+	db, err := repository.NewPostgresDB(repository.Config{
+		Host:     viper.GetString("postgres.db.host"),
+		Port:     viper.GetString("postgres.db.port"),
+		Username: viper.GetString("postgres.db.username"),
+		Password: os.Getenv("DB_PASSWORD"),
+		DBName:   viper.GetString("postgres.db.dbname"),
+		SSLMode:  viper.GetString("postgres.db.sslmode"),
+	})
+	if err != nil {
+		logrus.Fatalf("failed to connect to db: %s", err.Error())
+	}
+	conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
+	if err != nil {
+		logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
+	}
+	defer conn.Close()
+
+	eventBus, err := events.NewRabbitMQBus(conn)
+	if err != nil {
+		logrus.Fatalf("failed to init event bus: %s", err)
+	}
+	noteRepos := repository.NewRepository(db)
+	noteService := service.NewService(noteRepos)
+	noteHandler := handler.NewHandler(noteService, eventBus)
 	srv := new(server.Server)
-	go func () {
-		if err := srv.Run(viper.GetString("port"), userHandler.InitRoutes()); err != nil {
+	go func() {
+		if err := srv.Run(viper.GetString("port"), noteHandler.InitRoutes()); err != nil {
 			logrus.Fatalf("error occurred while running http server: %v", err.Error())
 		}
 	}()
@@ -60,7 +60,7 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-	<- quit
+	<-quit
 
 	logrus.Print("Note Microservice Shutting Down")
 
@@ -73,7 +73,7 @@ func main() {
 }
 
 func initConfig() error {
-    viper.AddConfigPath("./configs")
-    viper.SetConfigName("config")
-    return viper.ReadInConfig()
+	viper.AddConfigPath("./configs")
+	viper.SetConfigName("config")
+	return viper.ReadInConfig()
 }

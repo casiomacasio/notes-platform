@@ -4,11 +4,13 @@ import (
 	"context"
 	"os/signal"
 	"syscall"
+    "github.com/casiomacasio/notes-platform/services/auth/internal/events"
     "github.com/casiomacasio/notes-platform/services/auth/internal/handler"
     "github.com/casiomacasio/notes-platform/services/auth/internal/service"
     "github.com/casiomacasio/notes-platform/services/auth/internal/repository"
     "github.com/casiomacasio/notes-platform/services/auth/server"
     "github.com/joho/godotenv"
+    "github.com/streadway/amqp"
 	"github.com/sirupsen/logrus"
     "github.com/spf13/viper"
     "os"
@@ -31,12 +33,22 @@ func main() {
         DBName:   viper.GetString("postgres.db.dbname"),
         SSLMode:  viper.GetString("postgres.db.sslmode"),
     })
-    if err != nil {
+    if err != nil { 
         logrus.Fatalf("failed to connect to db: %s", err.Error())
+    }
+    conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
+    if err != nil {
+        logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
+    }
+    defer conn.Close()
+
+    eventBus, err := events.NewRabbitMQBus(conn)
+    if err != nil {
+        logrus.Fatalf("failed to init event bus: %s", err)
     }
     authRepos := repository.NewRepository(db)
     authService := service.NewService(authRepos)
-    authHandler := handler.NewHandler(authService)
+    authHandler := handler.NewHandler(authService, eventBus)
 	srv := new(server.Server)
 	go func () {
 		if err := srv.Run(viper.GetString("port"), authHandler.InitRoutes()); err != nil {

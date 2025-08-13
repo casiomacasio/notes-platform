@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/casiomacasio/notes-platform/services/user/internal/model"
+	"github.com/casiomacasio/notes-platform/services/user/internal/events"
 	"github.com/gin-gonic/gin"
 )
 
@@ -52,6 +53,15 @@ func (h *Handler) updateMe(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "profile_updated",
+		Data: map[string]interface{}{
+			"Name": input.Name,
+			"Email": input.Email,
+			"Bio":input.Bio,
+			"AvatartURL":input.AvatarURL,
+		},
+    })
 	c.JSON(http.StatusOK, map[string]string{
 		"status": "updated",
 	})

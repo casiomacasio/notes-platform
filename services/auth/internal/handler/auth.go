@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+    "github.com/casiomacasio/notes-platform/services/auth/internal/events"
     "github.com/casiomacasio/notes-platform/services/auth/internal/model"
     "github.com/casiomacasio/notes-platform/services/auth/internal/repository"
 	"github.com/gin-gonic/gin"
@@ -68,6 +69,14 @@ func (h *Handler) register(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "user_registered",
+		Data: map[string]interface{}{
+			"id":    id,
+			"Name": input.Name,
+			"Email": input.Email,
+		},
+    })
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"id": id,
 	})
@@ -104,7 +113,14 @@ func (h *Handler) signIn(c *gin.Context) {
 	}
 
 	setAuthCookies(c, accessToken, refreshToken, tokenID)
-
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "user_signed_in",
+		Data: map[string]interface{}{
+			"id":    user.Id,
+			"Name": user.Name,
+			"Email": user.Email,
+		},
+    })
 	c.JSON(http.StatusOK, map[string]string{
 		"message": "logged in successfully",
 	})
@@ -186,6 +202,11 @@ func (h *Handler) logout(c *gin.Context) {
 	deleteCookie("access_token")
 	deleteCookie("refresh_token")
 	deleteCookie("refresh_token_id")
-
+	h.eventBus.Publish("notifications", events.Event{
+		Type: "user_logged_out",
+		Data: map[string]interface{}{
+			"status": "user was logged out",
+		},
+    })
 	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }
