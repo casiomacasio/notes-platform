@@ -2,15 +2,15 @@ package handler
 
 import (
 	"errors"
-	"net/http"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 const userCtx = "userId"
 
 var (
-	ErrInvalidToken  = errors.New("invalid token")
-	ErrTokenExpired  = errors.New("token expired")
+	ErrInvalidToken = errors.New("invalid token")
+	ErrTokenExpired = errors.New("token expired")
 )
 
 func (h *Handler) userIdentity(c *gin.Context) {

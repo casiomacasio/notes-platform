@@ -35,14 +35,14 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("failed to init event bus: %s", err)
 	}
-	mongoClient, mongoDB := repository.ConnectMongo()
+
+	mongoClient, mongoDB, err := repository.ConnectMongo()
+	defer mongoClient.Disconnect(context.Background())
 	notificationRepos := repository.NewRepository(mongoDB)
-	notiticationService := service.NewService(notificationRepos)
-	authHandler := handler.NewHandler(notiticationService)
+	notificationService := service.NewService(notificationRepos)
+	authHandler := handler.NewHandler(notificationService)
 	go func() {
-		if err := eventBus.Consume("notifications", func(msg amqp.Delivery) {
-			service.ProcessOrderMessage(msg.Body)
-		}); err != nil {
+		if err := eventBus.Consume("notifications", notificationService.HandleNotificationMessage); err != nil {
 			logrus.Fatalf("failed to consume messages: %s", err)
 		}
 	}()
@@ -62,14 +62,6 @@ func main() {
 
 	if err := srv.Shutdown(context.Background()); err != nil {
 		logrus.Errorf("Error occurred when shutting down the server: %s", err.Error())
-	}
-
-	if err := mongoClient.Disconnect(context.Background()); err != nil {
-		logrus.Errorf("Error occurred when disconnecting from MongoDB: %s", err.Error())
-	}
-
-	if err := conn.Close(); err != nil {
-		logrus.Errorf("Error occurred when closing RabbitMQ connection: %s", err.Error())
 	}
 }
 

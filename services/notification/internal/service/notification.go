@@ -1,34 +1,36 @@
 package service
 
 import (
-// "github.com/casiomacasio/notes-platform/services/notification/internal/model"
-// "github.com/casiomacasio/notes-platform/services/notification/internal/repository"
+	"encoding/json"
+	"github.com/casiomacasio/notes-platform/services/notification/internal/model"
+	"github.com/casiomacasio/notes-platform/services/notification/internal/repository"
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
-// type NoteService struct {
-// 	repo repository.Note
-// }
+type NotificationService struct {
+	repo repository.Notification
+}
 
-// func NewNoteService(repo repository.Note) *NoteService {
-// 	return &NoteService{repo: repo}
-// }
+func NewNotificationService(repo repository.Notification) *NotificationService {
+	return &NotificationService{repo: repo}
+}
 
-// func (s *NoteService) CreateNote(userId int, input model.CreateNoteInput) (int, error) {
-// 	return s.repo.CreateNote(userId, input)
-// }
+func (s *NotificationService) GetAllNotifications() ([]model.Notification, error) {
+	return s.repo.GetAllNotifications()
+}
 
-// func (s *NoteService) GetNoteByID(userId, noteId int) (model.Note, error) {
-// 	return s.repo.GetNoteByID(userId, noteId)
-// }
+func (s *NotificationService) GetAllNotificationsByUserId(userId int) ([]model.Notification, error) {
+	return s.repo.GetAllNotificationsByUserId(userId)
+}
 
-// func (s *NoteService) GetAllNotes(userId int) ([]model.Note, error) {
-// 	return s.repo.GetAllNotes(userId)
-// }
-
-// func (s *NoteService) UpdateNote(userId, noteId int, input model.UpdateNoteInput) error {
-// 	return s.repo.UpdateNote(userId, noteId, input)
-// }
-
-// func (s *NoteService) DeleteNote(userId, noteId int) error {
-// 	return s.repo.DeleteNote(userId, noteId)
-// }
+func (s *NotificationService) HandleNotificationMessage(msg amqp.Delivery) {
+	var n model.Notification
+	if err := json.Unmarshal(msg.Body, &n); err != nil {
+		logrus.Printf("failed to unmarshal notification: %v", err)
+		return
+	}
+	if err := s.repo.SaveNotification(n); err != nil {
+		logrus.Printf("failed to save notification: %v", err)
+	}
+}
