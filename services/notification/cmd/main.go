@@ -2,18 +2,19 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/casiomacasio/notes-platform/services/notification/internal/events"
 	"github.com/casiomacasio/notes-platform/services/notification/internal/handler"
 	"github.com/casiomacasio/notes-platform/services/notification/internal/repository"
 	"github.com/casiomacasio/notes-platform/services/notification/internal/service"
 	"github.com/casiomacasio/notes-platform/services/notification/server"
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
@@ -21,11 +22,16 @@ func main() {
 		logrus.Fatalf("failed to read config: %s", err.Error())
 	}
 
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("error loading .env file: %s", err.Error())
+	var conn *amqp.Connection
+	var err error
+	for i := 1; i <= 15; i++ {
+		conn, err = amqp.Dial(viper.GetString("rabbitmq.url"))
+		if err == nil {
+			break
+		}
+		logrus.Warnf("RabbitMQ not ready yet (attempt %d/10): %v", i, err)
+		time.Sleep(2 * time.Second)
 	}
-
-	conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
 	if err != nil {
 		logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}
@@ -37,6 +43,9 @@ func main() {
 	}
 
 	mongoClient, mongoDB, err := repository.ConnectMongo()
+	if err != nil {
+		logrus.Fatalf("failed to connect to MongoDB: %v", err)
+	}
 	defer mongoClient.Disconnect(context.Background())
 	notificationRepos := repository.NewRepository(mongoDB)
 	notificationService := service.NewService(notificationRepos)

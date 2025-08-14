@@ -33,6 +33,8 @@ services:
 
   notification:
     build: ./services/notification
+    ports:
+      - "8084:8084"
     depends_on:
       - rabbitmq
       - mongodb
@@ -82,8 +84,6 @@ services:
     restart: always
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: mydb
     volumes:
       - mongo_data:/data/db
 
@@ -92,7 +92,7 @@ services:
     container_name: mongo_express
     restart: always
     ports:
-      - "8084:8081"
+      - "8085:8085"
     environment:
       ME_CONFIG_MONGODB_SERVER: mongodb
       ME_CONFIG_MONGODB_PORT: 27017
