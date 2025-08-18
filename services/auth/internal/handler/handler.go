@@ -22,7 +22,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.Default()
 
 	router.POST("/register", h.register)
-	router.POST("/sign-in", h.signIn)
+	router.POST("/login", h.signIn)
 	router.POST("/refresh", h.refresh)
 	router.POST("/logout", h.logout)
 

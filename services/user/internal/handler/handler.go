@@ -21,9 +21,9 @@ func NewHandler(service *service.Service, eventBus events.EventBus) *Handler {
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.Default()
 
-	router.GET("/me", h.userIdentity, h.getMe)
-	router.PUT("/me", h.userIdentity, h.updateMe)
-	router.GET("/:id", h.userIdentity, h.getByID)
+	router.GET("/me", h.getMe)
+	router.PUT("/me", h.updateMe)
+	router.GET("/:id", h.getByID)
 
 	return router
 }

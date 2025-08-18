@@ -41,7 +41,7 @@ func (r *notificationMongo) GetAllNotificationsByUserId(userId int) ([]model.Not
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"user_id": userId}
+	filter := bson.M{"userId": userId}
 	cursor, err := r.collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err

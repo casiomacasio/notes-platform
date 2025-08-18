@@ -18,8 +18,8 @@ func NewHandler(service *service.Service) *Handler {
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.Default()
 
-	router.GET("/", h.userIdentity, h.getAllNotifications)
-	router.GET("/:id", h.userIdentity, h.getAllNotificationsByUserId)
+	router.GET("/", h.getAllNotifications)
+	router.GET("/me", h.getAllNotificationsByUserId)
 
 	return router
 }

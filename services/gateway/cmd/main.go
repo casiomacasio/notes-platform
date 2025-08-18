@@ -1,9 +1,11 @@
 package main
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/casiomacasio/notes-platform/services/gateway/internal/auth"
+	"github.com/casiomacasio/notes-platform/services/gateway/internal/handler"
 	"github.com/casiomacasio/notes-platform/services/gateway/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -11,16 +13,16 @@ import (
 func main() {
 	r := gin.Default()
 
-	r.Any("/auth/*proxyPath", func(c *gin.Context) {
-		target := "http://auth:8081" + c.Param("proxyPath")
-		proxy(c, target)
-	})
+	r.POST("/auth/register", handler.Register)
+	r.POST("/auth/login", handler.Login)
+	r.POST("/auth/refresh", handler.Refresh)
+	r.POST("/auth/logout", handler.Logout)
 
 	authorized := r.Group("/")
 	authorized.Use(middleware.AuthMiddleware(auth.ParseToken))
 
 	authorized.Any("/note/*proxyPath", func(c *gin.Context) {
-		target := "http://notes:8082" + c.Param("proxyPath")
+		target := "http://note:8082" + c.Param("proxyPath")
 		proxy(c, target)
 	})
 
@@ -43,7 +45,6 @@ func proxy(c *gin.Context, target string) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	req.Header = c.Request.Header
 
 	client := &http.Client{}
@@ -54,5 +55,12 @@ func proxy(c *gin.Context, target string) {
 	}
 	defer resp.Body.Close()
 
-	c.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), resp.Body, nil)
+	for k, v := range resp.Header {
+		for _, vv := range v {
+			c.Writer.Header().Add(k, vv)
+		}
+	}
+
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
 }
