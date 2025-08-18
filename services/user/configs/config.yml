@@ -5,6 +5,6 @@ postgres:
     port: "5432"
     username: "postgres"
     dbname: "user_db"
-    sslmode: "disable" 
+    sslmode: "disable"
 rabbitmq:
-  url: "amqp://guest:guest@rabbitmq_host:5672/"
+  url: "amqp://guest:guest@rabbitmq:5672/"

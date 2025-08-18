@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
-	"github.com/casiomacasio/notes-platform/services/note/internal/events"
+	"time"
+
 	"github.com/casiomacasio/notes-platform/services/note/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -30,13 +32,15 @@ func (h *Handler) createNote(c *gin.Context) {
 		return
 	}
 
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "note_created",
-		Data: map[string]interface{}{
-			"id":    noteId,
-			"title": input.Title,
-		},
-    })
+	n := model.Notification{
+		UserId:    userId,
+		Type:      "Note Created",
+		Title:     "Note was created!",
+		Message:   fmt.Sprintf("Hello, you have made a note: %s", input.Title),
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
+	h.eventBus.Publish("notifications", n)
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"id": noteId,
 	})
@@ -104,13 +108,15 @@ func (h *Handler) updateNote(c *gin.Context) {
 		return
 	}
 
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "note_updated",
-		Data: map[string]interface{}{
-			"id":    noteId,
-			"title": input.Title,
-		},
-    })
+	n := model.Notification{
+		UserId:    userId,
+		Type:      "Note Updated",
+		Title:     "Note was Updated!",
+		Message:   fmt.Sprintf("Hello, you have updated a note: %s", *input.Title),
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
+	h.eventBus.Publish("notifications", n)
 
 	c.JSON(http.StatusOK, map[string]string{
 		"status": "updated",
@@ -135,12 +141,15 @@ func (h *Handler) deleteNote(c *gin.Context) {
 		return
 	}
 
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "note_deleted",
-		Data: map[string]interface{}{
-			"id":    noteId,
-		},
-    })
+	n := model.Notification{
+		UserId:    userId,
+		Type:      "Note Deleted",
+		Title:     "Note was deleted!",
+		Message:   "Hello, you have deleted a note",
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
+	h.eventBus.Publish("notifications", n)
 
 	c.JSON(http.StatusOK, map[string]string{
 		"status": "deleted",

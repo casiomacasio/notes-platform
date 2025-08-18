@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -37,7 +38,15 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("failed to connect to db: %s", err.Error())
 	}
-	conn, err := amqp.Dial(viper.GetString("rabbitmq.url"))
+	var conn *amqp.Connection
+	for i := 1; i <= 15; i++ {
+		conn, err = amqp.Dial(viper.GetString("rabbitmq.url"))
+		if err == nil {
+			break
+		}
+		logrus.Warnf("RabbitMQ not ready yet (attempt %d/10): %v", i, err)
+		time.Sleep(2 * time.Second)
+	}
 	if err != nil {
 		logrus.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}

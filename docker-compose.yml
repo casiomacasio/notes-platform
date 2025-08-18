@@ -6,7 +6,9 @@ services:
     depends_on:
       - auth
       - note
-
+      - user
+      - notification
+ 
   auth:
     build: ./services/auth
     ports:
@@ -14,6 +16,8 @@ services:
     depends_on:
       - auth_db
       - rabbitmq
+    environment:
+    - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
   note:
     build: ./services/note
@@ -22,6 +26,8 @@ services:
     depends_on:
       - note_db
       - rabbitmq
+    environment:
+    - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
   user:
     build: ./services/user
@@ -30,6 +36,8 @@ services:
     depends_on:
       - user_db
       - rabbitmq
+    environment:
+    - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
   notification:
     build: ./services/notification
@@ -41,6 +49,7 @@ services:
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
       - MONGODB_DBNAME=mydb
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
   auth_db:
     image: postgres:latest
@@ -87,20 +96,10 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  mongo-express:
-    image: mongo-express:1.0.2
-    container_name: mongo_express
-    restart: always
-    ports:
-      - "8085:8085"
-    environment:
-      ME_CONFIG_MONGODB_SERVER: mongodb
-      ME_CONFIG_MONGODB_PORT: 27017
-    depends_on:
-      - mongodb
-
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
     ports:
       - "5672:5672"
       - "15672:15672"

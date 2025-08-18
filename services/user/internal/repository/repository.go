@@ -6,12 +6,13 @@ import (
 )
 
 const (
-	usersTable      = "users"
+	usersTable = "users"
 )
 
-type User interface{
+type User interface {
 	GetUser(userId int) (model.User, error)
 	UpdateUser(useId int, input model.UpdateUserInput) error
+	CreateUser(userId int, Name, Email string) error
 }
 
 type Repository struct {

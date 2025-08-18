@@ -2,14 +2,14 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"errors"
+	"fmt"
 	"github.com/casiomacasio/notes-platform/services/user/internal/model"
 	"github.com/jmoiron/sqlx"
 )
 
 var (
-	ErrUserNotFound    = errors.New("user not found")
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type UserPostgres struct {
@@ -65,4 +65,13 @@ func (r *UserPostgres) UpdateUser(userId int, input model.UpdateUserInput) error
 
 	_, err := r.db.Exec(query, args...)
 	return err
+}
+
+func (r *UserPostgres) CreateUser(userId int, Name, Email string) error {
+	query := fmt.Sprintf(`INSERT INTO %s (id, name, email) VALUES ($1, $2, $3) RETURNING id`, usersTable)
+	err := r.db.QueryRow(query, userId, Name, Email)
+	if err != nil {
+		return err.Err()
+	}
+	return nil
 }

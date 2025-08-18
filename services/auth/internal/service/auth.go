@@ -1,25 +1,25 @@
 package service
 
 import (
-	"errors"
 	"crypto/rand"
+	"errors"
 	"os"
 	"time"
-	"github.com/google/uuid"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/model"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/repository"
+
+	"github.com/casiomacasio/notes-platform/services/auth/internal/model"
+	"github.com/casiomacasio/notes-platform/services/auth/internal/repository"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	tokenTTL           = 15 * time.Minute
-	refreshTokenTTL    = 30 * 24 * time.Hour
+	tokenTTL = 15 * time.Minute
 )
 
 var (
-	ErrInvalidToken  = errors.New("invalid token")
-	ErrTokenExpired  = errors.New("token expired")
+	ErrInvalidToken = errors.New("invalid token")
+	ErrTokenExpired = errors.New("token expired")
 )
 
 type tokenClaims struct {
@@ -28,7 +28,7 @@ type tokenClaims struct {
 }
 
 type AuthService struct {
-	repo        repository.Authorization
+	repo repository.Authorization
 }
 
 func NewAuthService(repo repository.Authorization) *AuthService {
@@ -75,7 +75,6 @@ func (s *AuthService) RevokeRefreshToken(tokenUUID uuid.UUID) error {
 	return nil
 }
 
-
 func (s *AuthService) GetUserByRefreshTokenAndRefreshTokenId(refresh_token string, refreshTokenUUID uuid.UUID) (int, error) {
 	userId, hashedToken, err := s.repo.GetUserIdAndHashByRefreshTokenId(refreshTokenUUID)
 	if err != nil {
@@ -84,7 +83,16 @@ func (s *AuthService) GetUserByRefreshTokenAndRefreshTokenId(refresh_token strin
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedToken), []byte(refresh_token))
 	if err != nil {
-		return 0, err 
+		return 0, err
+	}
+
+	return userId, nil
+}
+
+func (s *AuthService) GetUserByRefreshTokenId(refreshTokenUUID uuid.UUID) (int, error) {
+	userId, _, err := s.repo.GetUserIdAndHashByRefreshTokenId(refreshTokenUUID)
+	if err != nil {
+		return 0, err
 	}
 
 	return userId, nil
@@ -122,7 +130,6 @@ func (s *AuthService) GenerateRefreshToken(userId int) (string, string, error) {
 	return id.String(), tokenUUID.String(), nil
 }
 
-
 func (s *AuthService) GetUser(email, password string) (model.User, error) {
 	user, err := s.repo.GetUser(email, password)
 	if err != nil {
@@ -149,7 +156,7 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 	}
 	if err != nil {
 		if ve, ok := err.(*jwt.ValidationError); ok && ve.Errors&jwt.ValidationErrorExpired != 0 {
-			return 0, ErrTokenExpired 
+			return 0, ErrTokenExpired
 		}
 		return 0, ErrInvalidToken
 	}

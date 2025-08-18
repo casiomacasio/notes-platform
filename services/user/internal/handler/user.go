@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"fmt"
+	"github.com/casiomacasio/notes-platform/services/user/internal/model"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-
-	"github.com/casiomacasio/notes-platform/services/user/internal/model"
-	"github.com/casiomacasio/notes-platform/services/user/internal/events"
-	"github.com/gin-gonic/gin"
+	"time"
 )
 
 type getUserByIdResponses struct {
@@ -53,15 +53,15 @@ func (h *Handler) updateMe(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "profile_updated",
-		Data: map[string]interface{}{
-			"Name": input.Name,
-			"Email": input.Email,
-			"Bio":input.Bio,
-			"AvatartURL":input.AvatarURL,
-		},
-    })
+	n := model.Notification{
+		UserId:    userId,
+		Type:      "Profile Updated",
+		Title:     "Profile was updated!",
+		Message:   fmt.Sprintf("Hello %s, your profile was updated.", *input.Name),
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
+	h.eventBus.Publish("notifications", n)
 	c.JSON(http.StatusOK, map[string]string{
 		"status": "updated",
 	})

@@ -2,14 +2,15 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/google/uuid"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/events"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/model"
-    "github.com/casiomacasio/notes-platform/services/auth/internal/repository"
+	"github.com/casiomacasio/notes-platform/services/auth/internal/model"
+	"github.com/casiomacasio/notes-platform/services/auth/internal/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 var isProd = os.Getenv("APP_ENV") == "production"
@@ -69,21 +70,30 @@ func (h *Handler) register(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "user_registered",
-		Data: map[string]interface{}{
-			"id":    id,
-			"Name": input.Name,
-			"Email": input.Email,
-		},
-    })
+
+	userEvent := model.UserCreatedEvent{
+		UserId: id,
+		Name:   input.Name,
+		Email:  input.Email,
+	}
+	h.eventBus.Publish("user_events", userEvent)
+
+	n := model.Notification{
+		UserId:    id,
+		Type:      "user_signed_up",
+		Title:     "Welcome to the platform!",
+		Message:   "Hello, you have successfully signed up.",
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
+	h.eventBus.Publish("notifications", n)
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"id": id,
 	})
 }
 
 type signInInput struct {
-	Email string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -111,16 +121,16 @@ func (h *Handler) signIn(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-
+	n := model.Notification{
+		UserId:    user.Id,
+		Type:      "user_signed_in",
+		Title:     "Welcome back!",
+		Message:   "Hello, you have successfully signed in.",
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
 	setAuthCookies(c, accessToken, refreshToken, tokenID)
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "user_signed_in",
-		Data: map[string]interface{}{
-			"id":    user.Id,
-			"Name": user.Name,
-			"Email": user.Email,
-		},
-    })
+	h.eventBus.Publish("notifications", n)
 	c.JSON(http.StatusOK, map[string]string{
 		"message": "logged in successfully",
 	})
@@ -183,8 +193,14 @@ func (h *Handler) logout(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid refresh token format")
 		return
 	}
+	userId, err := h.service.Authorization.GetUserByRefreshTokenId(refreshTokenUUID)
+
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("couldn't get the user: %s", err.Error()))
+		return
+	}
 	if err := h.service.Authorization.RevokeRefreshToken(refreshTokenUUID); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "couldn't revoke refresh token")
+		newErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("couldn't revoke refresh token: %s", err.Error()))
 	}
 
 	deleteCookie := func(name string) {
@@ -202,11 +218,14 @@ func (h *Handler) logout(c *gin.Context) {
 	deleteCookie("access_token")
 	deleteCookie("refresh_token")
 	deleteCookie("refresh_token_id")
-	h.eventBus.Publish("notifications", events.Event{
-		Type: "user_logged_out",
-		Data: map[string]interface{}{
-			"status": "user was logged out",
-		},
-    })
+	n := model.Notification{
+		UserId:    userId,
+		Type:      "user_logged_out",
+		Title:     "Goodbye!",
+		Message:   "You successfully logged out",
+		Status:    "unread",
+		CreatedAt: time.Now(),
+	}
+	h.eventBus.Publish("notifications", n)
 	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }
