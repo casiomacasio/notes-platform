@@ -1,10 +1,11 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/casiomacasio/notes-platform/services/gateway/internal/auth"
 	"github.com/casiomacasio/notes-platform/services/gateway/internal/middleware"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func main() {
