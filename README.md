@@ -43,7 +43,7 @@
 
 - **Backend:** Go (gin-gonic, sqlx)
 - **База данных:** PostgreSQL
-- **Кэш / Rate limiting:** Redis
+- **Rate limiting:** Redis
 - **Очереди сообщений:** RabbitMQ
 - **Логирование уведомлений:** MongoDB
 - **Контейнеризация:** Docker + docker-compose
@@ -70,6 +70,7 @@ DB_PASSWORD=qwerty
 
 SIGNING_KEY="supersecretkey"
 
+REDIS_PASSWORD=redis
 ```
 
 ### 3. Запустить сервисы
