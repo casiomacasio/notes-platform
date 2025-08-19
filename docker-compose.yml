@@ -4,6 +4,7 @@ services:
     ports:
       - "8080:8080"
     depends_on:
+      - redis
       - auth
       - note
       - user
@@ -86,6 +87,13 @@ services:
       - user_db_data:/var/lib/postgresql/data
     ports:
       - "5435:5432"
+
+  redis:
+    image: redis:latest
+    restart: always
+    command: ["redis-server", "--requirepass", "redis"]
+    ports:
+      - "6380:6379"
 
   mongodb:
     image: mongo:7.0
