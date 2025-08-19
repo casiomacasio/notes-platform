@@ -26,8 +26,13 @@ jobs:
           sleep 25
           docker ps
 
+      - name: Install migrate CLI
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin
+
       - name: Run migrations
-        run: docker compose exec -T gateway make migrate
+        run: make migrate
 
       - name: Stop all services
         if: always()
