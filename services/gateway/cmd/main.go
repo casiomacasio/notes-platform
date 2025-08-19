@@ -52,7 +52,7 @@ func main() {
 
 	authorized := r.Group("/")
 	authorized.Use(middleware.AuthMiddleware(auth.ParseToken))
-	authorized.Use(middleware.RateLimitMiddleware(rdb, 20, time.Minute))
+	authorized.Use(middleware.RateLimitMiddleware(rdb, 100, time.Minute))
 
 	authorized.Any("/note/*proxyPath", func(c *gin.Context) {
 		target := "http://note:8082" + c.Param("proxyPath")
